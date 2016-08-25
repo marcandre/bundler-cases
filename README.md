@@ -27,3 +27,8 @@ Stashing this all in local files won't be as readable at all one shot.
 Building out BundlerFixture to move in a bunch of their builders will still be a bit of ruby code to code up.
 
 A cucumber-y type Given When in a simple DSL might be the best compromise.
+
+
+the cucumber-y though is going to need to implement BundlerFixture crap anyway. What bundler-patch has as integration tests is already in the right direction. It just needs more and more refinement to make it simpler for folks to just jump in with.
+
+Then there's executing them. Put it all inside a big case block. `BundlerTest.case do ... end`
