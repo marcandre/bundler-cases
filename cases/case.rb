@@ -1,9 +1,8 @@
 BundlerCase.define do
   given_gems do
-    # specs, right?
-    gem 'foo', '1.2.3', ['bar', '~> 2.0'], ['quux', '~> 2.0.1']
-    gem 'bar', '2.0.0'
-    gem 'qux', '2.0.0', '2.0.1', '2.0.2'
+    fake_gem 'foo', versions: '1.2.3', deps: [['bar', '~> 2.0'], ['quux', '~> 2.0.1']]
+    fake_gem 'bar', versions: '2.0.0'
+    fake_gem 'qux', versions: %w(2.0.0 2.0.1 2.0.2)
   end
 
   given_gemfile do

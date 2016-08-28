@@ -1,15 +1,22 @@
 class BundlerCase
-  def self.define
-    _case = BundlerCase.new
-    _case.instance_eval(&block)
+  def self.define(&block)
+    BundlerCase.new.tap { |c|
+      c.instance_eval(&block)
+    }
   end
 
-  def given_gems
+  attr_reader :gemfile, :out_dir, :repo_dir
 
+  def initialize
+    @out_dir = File.expand_path('../out', __dir__)
   end
 
-  def given_gemfile
+  def given_gems(&block)
+    instance_eval(&block)
+  end
 
+  def given_gemfile(&block)
+    @gemfile = block.call.outdent
   end
 
   def given_gemspec
@@ -42,5 +49,32 @@ class BundlerCase
 
   def expect_locked
 
+  end
+
+  private
+
+  def fake_gem(name, versions, deps)
+    @repo_dir = File.join(out_dir, 'repo')
+    FileUtils.makedirs @repo_dir
+    Array(versions).each do |ver|
+      spec = Gem::Specification.new.tap do |s|
+        s.name = name
+        s.version = ver
+        deps.each do |dep, *reqs|
+          s.add_dependency dep, reqs
+        end
+      end
+
+      Dir.chdir(@repo_dir) do
+        Bundler.rubygems.build(spec, skip_validation = true)
+      end
+    end
+  end
+end
+
+class String
+  def outdent
+    indent = scan(/^[ \t]*(?=\S)/).min.size || 0
+    gsub(/^[ \t]{#{indent}}/, '')
   end
 end
