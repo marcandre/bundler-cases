@@ -1,78 +1,40 @@
 class BundlerCase
+  extend Forwardable
+
   def self.define(&block)
-    BundlerCase.new.tap { |c|
-      c.instance_eval(&block)
-    }
+    c = BundlerCase.new
+    c.instance_eval(&block)
+    c
   end
 
   attr_reader :out_dir, :repo_dir, :failures
 
   def initialize
     recreate_out_dir
-    @failures = []
-    @expected_specs = []
-    @cmd = 'bundle install --path .bundle'
+    make_repo_dir
+
+    # prolly should only support top-level step for non-step default
+    # behavior OR nested ... but ... we'll see how this plays out
+    @nested = []
+    @step = Step.new(self)
   end
 
-  def given_gems(&block)
-    instance_eval(&block)
-    Dir.chdir(@repo_dir) do
-      system 'gem generate_index'
-    end
-  end
-
-  def given_gemfile(&block)
-    contents = block.call.outdent
-    swap_in_fake_repo(contents)
-    File.open(gem_filename, 'w') { |f| f.print contents }
-  end
-
-  def given_gemspec
-
-  end
-
-  def given_lockfile
-
-  end
-
-  def given_locked
-
-  end
-
-  def given_new_gemfile
-
-  end
-
-  def given_bundler_version
-
-  end
-
-  def execute_bundler(&block)
-    @cmd = block.call
-  end
-
-  def expect_lockfile
-
-  end
-
-  def expect_locked(&block)
-    @expected_specs.concat(block.call.map do |name, ver|
-      Gem::Specification.new(name, ver)
-    end)
+  def step(&block)
+    @nested << Step.new(self).tap { |c| c.instance_eval(&block) }
   end
 
   def test
-    Bundler.with_clean_env do
-      ENV['BUNDLE_GEMFILE'] = gem_filename
-      Dir.chdir(@out_dir) do
-        system @cmd
-      end
+    @failures = []
+    steps = @nested.empty? ? Array(@step) : @nested
+    steps.each do |s|
+      @failures = s.test
+      break unless @failures.empty?
     end
-
-    lockfile = File.join(@out_dir, 'Gemfile.lock')
-    parser = Bundler::LockfileParser.new(Bundler.read_file(lockfile))
-    @failures = ExpectedSpecs.new.failures(@expected_specs, parser.specs)
     @failures.empty?
+  end
+
+  def gem_filename
+    File.join(@out_dir, 'Gemfile')
   end
 
   private
@@ -83,39 +45,119 @@ class BundlerCase
     FileUtils.makedirs @out_dir
   end
 
-  def fake_gem(name, versions, deps=[])
-    make_repo_dir
-    Array(versions).each do |ver|
-      spec = Gem::Specification.new.tap do |s|
-        s.name = name
-        s.version = ver
-        deps.each do |dep, *reqs|
-          s.add_dependency dep, reqs
-        end
-      end
-
-      Dir.chdir(@repo_gems_dir) do
-        Bundler.rubygems.build(spec, skip_validation = true)
-      end
-    end
-  end
-
   def make_repo_dir
     @repo_dir = File.join(out_dir, 'repo')
     FileUtils.makedirs @repo_dir
 
-    @repo_gems_dir = File.join(@repo_dir, 'gems')
-    FileUtils.makedirs @repo_gems_dir
+    gems_dir = File.join(@repo_dir, 'gems')
+    FileUtils.makedirs gems_dir
   end
 
-  def gem_filename
-    File.join(@out_dir, 'Gemfile')
+  class Step
+    def initialize(bundler_case)
+      @bundler_case = bundler_case
+      @failures = []
+      @expected_specs = []
+      @expected_not_specs = []
+      @cmd = -> { system 'bundle install --path .bundle' }
+      @procs = []
+    end
+
+    def given_gems(&block)
+      @procs << -> {
+        instance_eval(&block)
+        Dir.chdir(@bundler_case.repo_dir) do
+          system 'gem generate_index'
+        end
+      }
+    end
+
+    def given_gemfile(&block)
+      contents = block.call.outdent
+      swap_in_fake_repo(contents)
+      @procs << -> { File.open(@bundler_case.gem_filename, 'w') { |f| f.print contents } }
+    end
+
+    def given_gemspec
+
+    end
+
+    def given_lockfile
+
+    end
+
+    def given_locked
+
+    end
+
+    def given_bundler_version
+
+    end
+
+    def execute_bundler(&block)
+      cmd = block.call
+      @cmd = -> { system cmd }
+    end
+
+    def expect_lockfile
+
+    end
+
+    def expect_locked(&block)
+      @expected_specs.concat(block.call.map do |name, ver|
+        Gem::Specification.new(name, ver)
+      end)
+    end
+
+    def expect_not_locked(&block)
+      @expected_not_specs.concat(block.call.map do |name, ver|
+        Gem::Specification.new(name, ver)
+      end)
+    end
+
+    def test
+      Bundler.with_clean_env do
+        ENV['BUNDLE_GEMFILE'] = @bundler_case.gem_filename
+        Dir.chdir(@bundler_case.out_dir) do
+          @procs.map(&:call)
+          @cmd.call
+        end
+      end
+
+      if @expected_specs.empty?
+        []
+      else
+        lockfile = File.join(@bundler_case.out_dir, 'Gemfile.lock')
+        parser = Bundler::LockfileParser.new(Bundler.read_file(lockfile))
+        ExpectedSpecs.new.failures(@expected_specs, parser.specs)
+      end
+    end
+
+    private
+
+    def fake_gem(name, versions, deps=[])
+      Array(versions).each do |ver|
+        spec = Gem::Specification.new.tap do |s|
+          s.name = name
+          s.version = ver
+          deps.each do |dep, *reqs|
+            s.add_dependency dep, reqs
+          end
+        end
+
+        gems_dir = File.join(@bundler_case.repo_dir, 'gems')
+        Dir.chdir(gems_dir) do
+          Bundler.rubygems.build(spec, skip_validation = true)
+        end
+      end
+    end
+
+    def swap_in_fake_repo(contents)
+      contents.gsub!(/source +['"]fake["']/, %Q(source "file://#{@bundler_case.repo_dir}"))
+    end
   end
 
-  def swap_in_fake_repo(contents)
-    make_repo_dir
-    contents.gsub!(/source +['"]fake["']/, %Q(source "file://#{@repo_dir}"))
-  end
+  def_delegators :@step, *(Step.public_instance_methods(include_super = false) - [:test])
 end
 
 class String
