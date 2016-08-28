@@ -5,20 +5,30 @@ class BundlerCase
     }
   end
 
-  attr_reader :out_dir, :repo_dir
+  attr_reader :out_dir, :repo_dir, :failures
 
   def initialize
     @out_dir = File.expand_path('../out', __dir__)
     FileUtils.makedirs @out_dir
+    @failures = []
   end
 
   def given_gems(&block)
     instance_eval(&block)
+    Dir.chdir(@repo_dir) do
+      system 'gem generate_index'
+    end
   end
 
   def given_gemfile(&block)
     contents = block.call.outdent
-    File.open(File.join(@out_dir, 'Gemfile'), 'w') { |f| f.print contents }
+    swap_in_local_repo(contents)
+    File.open(gem_filename, 'w') { |f| f.print contents }
+  end
+
+  def swap_in_local_repo(contents)
+    make_repo_dir
+    contents.gsub!(/source +['"]local["']/, %Q(source "file://#{@repo_dir}"))
   end
 
   def given_gemspec
@@ -41,23 +51,40 @@ class BundlerCase
 
   end
 
-  def execute_bundler
-
+  def execute_bundler(&block)
+    @cmd = block.call
   end
 
   def expect_lockfile
 
   end
 
-  def expect_locked
+  def expect_locked(&block)
+    @expected_specs = block.call.map do |name, ver|
+      Gem::Specification.new(name, ver)
+    end
+  end
 
+  def test
+    Bundler.with_clean_env do
+      ENV['BUNDLE_GEMFILE'] = gem_filename
+      Dir.chdir(@out_dir) do
+        system @cmd
+      end
+    end
+
+    lockfile = File.join(@out_dir, 'Gemfile.lock')
+    parser = Bundler::LockfileParser.new(Bundler.read_file(lockfile))
+    found, lost = @expected_specs.partition do |expected|
+      parser.specs.detect { |s| s.name == expected.name && s.version == expected.version }
+    end
+    lost.empty?
   end
 
   private
 
-  def fake_gem(name, versions, deps)
-    @repo_dir = File.join(out_dir, 'repo')
-    FileUtils.makedirs @repo_dir
+  def fake_gem(name, versions, deps=[])
+    make_repo_dir
     Array(versions).each do |ver|
       spec = Gem::Specification.new.tap do |s|
         s.name = name
@@ -67,10 +94,22 @@ class BundlerCase
         end
       end
 
-      Dir.chdir(@repo_dir) do
+      Dir.chdir(@repo_gems_dir) do
         Bundler.rubygems.build(spec, skip_validation = true)
       end
     end
+  end
+
+  def make_repo_dir
+    @repo_dir = File.join(out_dir, 'repo')
+    FileUtils.makedirs @repo_dir
+
+    @repo_gems_dir = File.join(@repo_dir, 'gems')
+    FileUtils.makedirs @repo_gems_dir
+  end
+
+  def gem_filename
+    File.join(@out_dir, 'Gemfile')
   end
 end
 
