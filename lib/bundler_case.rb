@@ -8,9 +8,10 @@ class BundlerCase
   attr_reader :out_dir, :repo_dir, :failures
 
   def initialize
-    @out_dir = File.expand_path('../out', __dir__)
-    FileUtils.makedirs @out_dir
+    recreate_out_dir
     @failures = []
+    @expected_specs = []
+    @cmd = 'bundle install --path .bundle'
   end
 
   def given_gems(&block)
@@ -70,13 +71,27 @@ class BundlerCase
 
     lockfile = File.join(@out_dir, 'Gemfile.lock')
     parser = Bundler::LockfileParser.new(Bundler.read_file(lockfile))
-    found, lost = @expected_specs.partition do |expected|
-      parser.specs.detect { |s| s.name == expected.name && s.version == expected.version }
+    @expected_specs.each do |expected|
+      found = parser.specs.detect { |s| s.name == expected.name && s.version == expected.version }
+      unless found
+        found = parser.specs.detect { |s| s.name == expected.name }
+        if found
+          @failures << "Expected #{expected.name} #{expected.version}, found #{found.name} #{found.version}"
+        else
+          @failures << "Expected #{expected.name} #{expected.version}, gem not found"
+        end
+      end
     end
-    lost.empty?
+    @failures.empty?
   end
 
   private
+
+  def recreate_out_dir
+    @out_dir = File.expand_path('../out', __dir__)
+    FileUtils.remove_entry_secure(@out_dir) if File.exist?(@out_dir)
+    FileUtils.makedirs @out_dir
+  end
 
   def fake_gem(name, versions, deps=[])
     make_repo_dir

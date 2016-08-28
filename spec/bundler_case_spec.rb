@@ -39,7 +39,15 @@ describe BundlerCase do
     expect(File.exist?(File.join(gems_dir, 'foo-1.0.1.gem'))).to be_true
   end
 
-  it 'integration' do
+  it 'has default bundle command' do
+    expect(BundlerCase.new.instance_variable_get('@cmd')).to eql 'bundle install --path .bundle'
+  end
+
+  it 'has default expected_specs' do
+    expect(BundlerCase.new.instance_variable_get('@expected_specs')).to eql []
+  end
+
+  it 'integration success' do
     c = BundlerCase.define do
       given_gems do
         fake_gem 'foo', '1.0.0', [['bar', '~> 1.0']]
@@ -68,4 +76,36 @@ describe BundlerCase do
     dest = File.join(c.out_dir, 'zz', 'ruby', '*', 'gems', 'foo-1.0.0')
     expect(File.exist?(Dir[dest].first)).to be_true
   end
+
+  it 'integration failure' do
+    c = BundlerCase.define do
+      given_gems do
+        fake_gem 'foo', '1.0.0', [['bar', '~> 1.0']]
+        fake_gem 'bar', '1.0.1'
+      end
+
+      given_gemfile do
+        <<-G
+          source 'fake' do
+            gem 'foo'
+          end
+        G
+      end
+
+      execute_bundler do
+        'bundle install --path zz'
+      end
+
+      expect_locked do
+        [%w(foo 1.0.0), %w(bar 1.1.0)]
+      end
+    end
+    expect(c.test).to_not be_true
+    expect(c.failures).to_not be_empty
+    expect(c.failures.first).to eql 'Expected bar 1.1.0, found bar 1.0.1'
+
+    dest = File.join(c.out_dir, 'zz', 'ruby', '*', 'gems', 'foo-1.0.0')
+    expect(File.exist?(Dir[dest].first)).to be_true
+  end
+
 end
