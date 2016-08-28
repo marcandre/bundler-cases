@@ -56,9 +56,9 @@ class BundlerCase
   end
 
   def expect_locked(&block)
-    @expected_specs = block.call.map do |name, ver|
+    @expected_specs.concat(block.call.map do |name, ver|
       Gem::Specification.new(name, ver)
-    end
+    end)
   end
 
   def test
@@ -71,17 +71,7 @@ class BundlerCase
 
     lockfile = File.join(@out_dir, 'Gemfile.lock')
     parser = Bundler::LockfileParser.new(Bundler.read_file(lockfile))
-    @expected_specs.each do |expected|
-      found = parser.specs.detect { |s| s.name == expected.name && s.version == expected.version }
-      unless found
-        found = parser.specs.detect { |s| s.name == expected.name }
-        if found
-          @failures << "Expected #{expected.name} #{expected.version}, found #{found.name} #{found.version}"
-        else
-          @failures << "Expected #{expected.name} #{expected.version}, gem not found"
-        end
-      end
-    end
+    @failures = ExpectedSpecs.new.failures(@expected_specs, parser.specs)
     @failures.empty?
   end
 
@@ -132,5 +122,23 @@ class String
   def outdent
     indent = scan(/^[ \t]*(?=\S)/).min.size || 0
     gsub(/^[ \t]{#{indent}}/, '')
+  end
+end
+
+class ExpectedSpecs
+  def failures(expected, actual)
+    res = []
+    expected.each do |expect|
+      found = actual.detect { |s| s.name == expect.name && s.version == expect.version }
+      unless found
+        found = actual.detect { |s| s.name == expect.name }
+        if found
+          res << "Expected #{expect.name} #{expect.version}, found #{found.name} #{found.version}"
+        else
+          res << "Expected #{expect.name} #{expect.version}, gem not found"
+        end
+      end
+    end
+    res
   end
 end

@@ -14,7 +14,9 @@ BundlerCase.define do
   end
 
   expect_locked do
-    [%w(actionpack 2.3.8), %w(activemerchant 1.5.1), %w(rack 1.1.6),
+    [%w(actionpack 2.3.8),
+     %w(activemerchant 1.5.1),
+     %w(rack 1.1.6),
      %w(activesupport 2.3.8)]
   end
 end

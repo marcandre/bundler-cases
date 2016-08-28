@@ -109,3 +109,23 @@ describe BundlerCase do
   end
 
 end
+
+describe ExpectedSpecs do
+  def spec(name, version)
+    Gem::Specification.new(name, version)
+  end
+
+  it 'reports no errors by default' do
+    expect(ExpectedSpecs.new.failures([], [])).to eql []
+  end
+
+  it 'reports errors for diff version' do
+    failures = ExpectedSpecs.new.failures([spec('foo', '1.0.0')], [spec('foo', '1.0.1')])
+    expect(failures).to eql ['Expected foo 1.0.0, found foo 1.0.1']
+  end
+
+  it 'reports errors for missing gem' do
+    failures = ExpectedSpecs.new.failures([spec('foo', '1.0.0')], [])
+    expect(failures).to eql ['Expected foo 1.0.0, gem not found']
+  end
+end
