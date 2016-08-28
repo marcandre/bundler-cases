@@ -21,7 +21,7 @@ describe BundlerCase do
     c = BundlerCase.define do
       given_gemfile do
         <<-G
-          source 'local'
+          source 'fake'
         G
       end
     end
@@ -48,7 +48,7 @@ describe BundlerCase do
 
       given_gemfile do
         <<-G
-          source 'local' do
+          source 'fake' do
             gem 'foo'
           end
         G

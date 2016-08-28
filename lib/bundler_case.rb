@@ -22,13 +22,8 @@ class BundlerCase
 
   def given_gemfile(&block)
     contents = block.call.outdent
-    swap_in_local_repo(contents)
+    swap_in_fake_repo(contents)
     File.open(gem_filename, 'w') { |f| f.print contents }
-  end
-
-  def swap_in_local_repo(contents)
-    make_repo_dir
-    contents.gsub!(/source +['"]local["']/, %Q(source "file://#{@repo_dir}"))
   end
 
   def given_gemspec
@@ -110,6 +105,11 @@ class BundlerCase
 
   def gem_filename
     File.join(@out_dir, 'Gemfile')
+  end
+
+  def swap_in_fake_repo(contents)
+    make_repo_dir
+    contents.gsub!(/source +['"]fake["']/, %Q(source "file://#{@repo_dir}"))
   end
 end
 
