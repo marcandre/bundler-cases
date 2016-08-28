@@ -14,7 +14,7 @@ describe BundlerCase do
         G
       end
     end
-    expect(c.gemfile).to eql "gemfile contents\n"
+    expect(File.read(File.join(c.out_dir, 'Gemfile'))).to eql "gemfile contents\n"
   end
 
   it 'given gems' do

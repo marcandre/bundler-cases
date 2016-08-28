@@ -5,10 +5,11 @@ class BundlerCase
     }
   end
 
-  attr_reader :gemfile, :out_dir, :repo_dir
+  attr_reader :out_dir, :repo_dir
 
   def initialize
     @out_dir = File.expand_path('../out', __dir__)
+    FileUtils.makedirs @out_dir
   end
 
   def given_gems(&block)
@@ -16,7 +17,8 @@ class BundlerCase
   end
 
   def given_gemfile(&block)
-    @gemfile = block.call.outdent
+    contents = block.call.outdent
+    File.open(File.join(@out_dir, 'Gemfile'), 'w') { |f| f.print contents }
   end
 
   def given_gemspec
