@@ -1,4 +1,6 @@
 # bundler-cases
 DSL for writing up integration tests for Bundler
 
-need a way to focus on use cases, similar to what can be done in Bundler's tests, but more accessible to end-users without having to pull the entire Bundler codebase.
+bundler-cases provides a simple framework to describe various test scenarios with Bundler. 
+
+The first case defined re-creates the [Conservative Updating](http://bundler.io/v1.12/man/bundle-install.1.html#CONSERVATIVE-UPDATING) scenario in the `bundle install` docs.
