@@ -1,5 +1,5 @@
 BundlerCase.define do
-  step 'Setup: create versions of foo and bar starter bundle pinned to starting versions' do
+  step 'Setup Gemfile' do
     given_gems do
       fake_gem 'foo', '1.4.3', [['bar', '~> 2.0']]
       fake_gem 'foo', '1.4.4', [['bar', '~> 2.0']]
@@ -11,20 +11,7 @@ BundlerCase.define do
 
     given_bundler_version { '1.13.0.rc.2' }
 
-    given_gemfile do
-      <<-G
-source 'fake' do
-  gem 'foo', '1.4.3'
-  gem 'bar', '2.0.3'
-end
-      G
-    end
-
-    expect_locked { ['foo 1.4.3', 'bar 2.0.3'] }
-  end
-
-  step 'Setup: change Gemfile to not have a requirement' do
-    given_gemfile do
+    given_gemfile lock: ['foo 1.4.3', 'bar 2.0.3'] do
       <<-G
 source 'fake' do
   gem 'foo'

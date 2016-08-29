@@ -81,19 +81,14 @@ class BundlerCase
       }
     end
 
-    def given_gemfile(&block)
+    def given_gemfile(opts={}, &block)
       contents = block.call.outdent
       swap_in_fake_repo(contents)
-      @procs << -> { File.open(@bundler_case.gem_filename, 'w') { |f| f.print contents } }
+      @procs << -> { GemfileFixture.new(@bundler_case, contents, opts).build }
     end
 
     def given_gemspec
-
-    end
-
-    def given_locked
-      # TODO - could be nice to have to prevent the common two-step Setup to pin versions in the lockfile to
-      # a specific version with a precursor Gemfile, then reset the Gemfile to remove the requirements.
+      # TODO
     end
 
     def given_bundler_version(&block)
@@ -171,6 +166,44 @@ class BundlerCase
   end
 
   def_delegators :@step, *(Step.public_instance_methods(include_super = false) - [:test])
+
+  class GemfileFixture
+    def initialize(bundler_case, contents, opts={})
+      @bundler_case = bundler_case
+      @gem_filename = bundler_case.gem_filename
+      @contents = contents
+      @opts = opts
+    end
+
+    def build
+      lock_down if @opts[:lock]
+
+      write_gemfile_contents(@contents)
+    end
+
+    def write_gemfile_contents(contents)
+      File.open(@gem_filename, 'w') { |f| f.print contents }
+    end
+
+    def lock_down
+      pre_contents = @contents.dup
+      @opts[:lock].each do |gem_lock|
+        name, version = gem_lock.split(' ')
+        re = /^\s*gem.*['"]\s*#{name}\s*['"].*$/
+        unless pre_contents.gsub!(re, "gem '#{name}', '#{version}'")
+          # TODO this could easily be problematic in many cases with multiple sources and whatnot ...
+          # ... we can worry about this later. Sorry to whomever is now reading this and wishing they weren't
+          pre_contents << "\n  gem '#{name}', '#{version}'"
+        end
+      end
+      write_gemfile_contents(pre_contents)
+      Dir.chdir(@bundler_case.out_dir)  do
+        cmd = 'bundle lock'
+        puts "=> #{cmd}"
+        system cmd
+      end
+    end
+  end
 end
 
 class String

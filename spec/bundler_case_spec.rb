@@ -2,8 +2,8 @@ require_relative 'spec_helper'
 
 describe BundlerCase do
   after do
-    dir = BundlerCase.new.out_dir
-    FileUtils.remove_entry_secure(dir) if File.exist?(dir)
+    # dir = BundlerCase.new.out_dir
+    # FileUtils.remove_entry_secure(dir) if File.exist?(dir)
   end
 
   it 'given gems' do
@@ -100,6 +100,26 @@ describe BundlerCase do
     expect(File.exist?(Dir[dest].first)).to be_true
   end
 
+  it 'lock option to given_gemfile' do
+    c = BundlerCase.define do
+      given_gems do
+        fake_gem 'foo', %w(1.0.0 1.0.2 1.1.0), [['bar', '~> 1.0']]
+        fake_gem 'bar', %w(1.0.1 1.0.3 1.3.4)
+      end
+
+      given_gemfile lock: ['foo 1.0.2', 'bar 1.0.3'] do
+        <<-G
+        source 'fake' do
+          gem 'foo', '~> 1.0'
+        end
+        G
+      end
+
+      expect_locked { ['foo 1.0.2', 'bar 1.0.3'] }
+    end
+    c.test
+    expect(c.failures).to eql []
+  end
 end
 
 describe ExpectedSpecs do
