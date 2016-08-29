@@ -5,7 +5,7 @@ BundlerCase.define do
   # This must be run first to install the gems and pin activemerchant
   # to 1.5.1, and builder to 2.1.2, which appear to be the most current
   # gems at the time the docs were written.
-  step do
+  step 'Setup: pin versions to correct starting versions and install gems' do
     given_gemfile do
       <<-G
       source 'https://rubygems.org' do
@@ -25,7 +25,7 @@ BundlerCase.define do
   end
 
   # Re-run with this Gemfile to match the original Gemfile in the docs
-  step do
+  step 'Setup: Change Gemfile to match starting gemfile and confirm locked versions stay put' do
     given_gemfile do
       <<-G
       source 'https://rubygems.org' do
@@ -40,7 +40,7 @@ BundlerCase.define do
     end
   end
 
-  step do
+  step "Change actionpack, `bundle install` won't work due to keeping activemerchant and its dependencies locked" do
     given_gemfile do
       <<-G
       source 'https://rubygems.org' do
@@ -57,7 +57,7 @@ BundlerCase.define do
     end
   end
 
-  step do
+  step '`bundle update actionpack` will work because it will not care about activemerchant dependencies being upgraded' do
     execute_bundler do
       'bundle update actionpack'
     end

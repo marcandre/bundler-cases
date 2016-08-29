@@ -19,16 +19,22 @@ class BundlerCase
     @step = Step.new(self)
   end
 
-  def step(&block)
-    @nested << Step.new(self).tap { |c| c.instance_eval(&block) }
+  def step(description=nil, &block)
+    @nested << Step.new(self, description).tap { |c| c.instance_eval(&block) }
   end
 
   def test
     @failures = []
     steps = @nested.empty? ? Array(@step) : @nested
     steps.each do |s|
+      if s.description
+        puts '#' * s.description.length
+        puts s.description
+        puts '#' * s.description.length
+      end
       @failures = s.test
       break unless @failures.empty?
+      puts
     end
     @failures.empty?
   end
@@ -54,12 +60,15 @@ class BundlerCase
   end
 
   class Step
-    def initialize(bundler_case)
+    attr_reader :description
+
+    def initialize(bundler_case, description=nil)
       @bundler_case = bundler_case
+      @description = description
       @failures = []
       @expected_specs = []
       @expected_not_specs = []
-      @cmd = -> { system 'bundle install --path .bundle' }
+      @cmd = -> { cmd = 'bundle install --path .bundle'; puts "=> #{cmd}"; system cmd }
       @procs = []
     end
 
@@ -96,7 +105,7 @@ class BundlerCase
 
     def execute_bundler(&block)
       cmd = block.call
-      @cmd = -> { system cmd }
+      @cmd = -> { puts "=> #{cmd}"; system cmd }
     end
 
     def expect_lockfile
