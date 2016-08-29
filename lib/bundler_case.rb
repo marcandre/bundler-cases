@@ -20,7 +20,11 @@ class BundlerCase
   end
 
   def step(description=nil, &block)
-    @nested << Step.new(self, description).tap { |c| c.instance_eval(&block) }
+    Step.new(self, description).tap { |c| c.instance_eval(&block) }.tap { |s| @nested << s }
+  end
+
+  def repeat_step(step)
+    @nested << step
   end
 
   def test
@@ -94,7 +98,7 @@ class BundlerCase
     def given_bundler_version(&block)
       version = block.call
       @procs << -> {
-        installed = `gem list bundler`.scan(/\Abundler \(.*\)/).join.split(/, /)
+        installed = `gem list bundler`.scan(/\Abundler \((.*)\)/).join.split(/, /)
         unless installed.include?(version)
           puts "Installing bundler #{version}..."
           `gem install bundler --version #{version}`
@@ -191,13 +195,13 @@ class BundlerCase
         name, version = gem_lock.split(' ')
         re = /^\s*gem.*['"]\s*#{name}\s*['"].*$/
         unless pre_contents.gsub!(re, "gem '#{name}', '#{version}'")
-          # TODO this could easily be problematic in many cases with multiple sources and whatnot ...
+          # NOTE: this could easily be problematic in many cases with multiple sources and whatnot ...
           # ... we can worry about this later. Sorry to whomever is now reading this and wishing they weren't
           pre_contents << "\n  gem '#{name}', '#{version}'"
         end
       end
       write_gemfile_contents(pre_contents)
-      Dir.chdir(@bundler_case.out_dir)  do
+      Dir.chdir(@bundler_case.out_dir) do
         cmd = 'bundle lock'
         puts "=> #{cmd}"
         system cmd
