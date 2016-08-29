@@ -91,12 +91,9 @@ class BundlerCase
 
     end
 
-    def given_lockfile
-
-    end
-
     def given_locked
-
+      # TODO - could be nice to have to prevent the common two-step Setup to pin versions in the lockfile to
+      # a specific version with a precursor Gemfile, then reset the Gemfile to remove the requirements.
     end
 
     def given_bundler_version(&block)
@@ -113,10 +110,6 @@ class BundlerCase
     def execute_bundler(&block)
       cmd = block.call
       @cmd = -> { puts "=> #{cmd}"; system cmd }
-    end
-
-    def expect_lockfile
-
     end
 
     def expect_locked(&block)
