@@ -99,8 +99,15 @@ class BundlerCase
 
     end
 
-    def given_bundler_version
-
+    def given_bundler_version(&block)
+      version = block.call
+      @procs << -> {
+        installed = `gem list bundler`.scan(/\Abundler \(.*\)/).join.split(/, /)
+        unless installed.include?(version)
+          puts "Installing bundler #{version}..."
+          `gem install bundler --version #{version}`
+        end
+      }
     end
 
     def execute_bundler(&block)
