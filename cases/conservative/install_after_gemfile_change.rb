@@ -1,5 +1,4 @@
-# This case recreates the documented conservative updating case in bundle install
-# documentation.
+# This case recreates the documented conservative updating case in bundle install documentation.
 # see: http://bundler.io/v1.12/man/bundle-install.1.html#CONSERVATIVE-UPDATING
 BundlerCase.define do
   # This must be run first to install the gems and pin activemerchant
