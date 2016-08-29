@@ -39,7 +39,7 @@ describe BundlerCase do
         end
 
         expect_locked do
-          [%w(foo 1.0.0), %w(bar 1.0.1)]
+          ['foo 1.0.0', 'bar 1.0.1']
         end
       end
 
@@ -53,7 +53,7 @@ describe BundlerCase do
         end
 
         expect_locked do
-          [%w(foo 1.1.0)]
+          ['foo 1.1.0']
         end
 
         expect_not_locked do
@@ -89,7 +89,7 @@ describe BundlerCase do
       end
 
       expect_locked do
-        [%w(foo 1.0.0), %w(bar 1.1.0)]
+        ['foo 1.0.0', 'bar 1.1.0']
       end
     end
     expect(c.test).to_not be_true

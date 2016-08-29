@@ -16,10 +16,7 @@ BundlerCase.define do
     end
 
     expect_locked do
-      [%w(actionpack 2.3.8),
-       %w(activemerchant 1.5.1),
-       %w(rack 1.1.6),
-       %w(activesupport 2.3.8)]
+      ['actionpack 2.3.8', 'activemerchant 1.5.1', 'rack 1.1.6', 'activesupport 2.3.8']
     end
   end
 
@@ -35,7 +32,7 @@ BundlerCase.define do
     end
 
     expect_locked do
-      [%w(activemerchant 1.5.1), %w(builder 2.1.2)]
+      ['activemerchant 1.5.1', 'builder 2.1.2']
     end
   end
 
@@ -49,7 +46,7 @@ BundlerCase.define do
       G
     end
 
-     # expect_conflict - TODO
+    # expect_conflict - TODO
 
     execute_bundler do
       'bundle install'
@@ -62,7 +59,7 @@ BundlerCase.define do
     end
 
     expect_locked do
-      [%w(actionpack 3.0.0.rc), %w(rack 1.2.8), %w(activemerchant 1.5.1)]
+      ['actionpack 3.0.0.rc', 'rack 1.2.8', 'activemerchant 1.5.1']
     end
   end
 end

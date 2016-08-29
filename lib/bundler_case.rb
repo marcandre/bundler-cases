@@ -121,7 +121,11 @@ class BundlerCase
 
     def expect_locked(&block)
       @expected_specs.concat(block.call.map do |name, ver|
-        Gem::Specification.new(name, ver)
+        if ver.nil? && name.split(/ /).length == 2
+          Gem::Specification.new(*name.split(/ /))
+        else
+          Gem::Specification.new(name, ver)
+        end
       end)
     end
 

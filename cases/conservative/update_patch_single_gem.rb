@@ -14,7 +14,7 @@ end
       G
     end
 
-    expect_locked { [%w(foo 1.4.3)] }
+    expect_locked { ['foo 1.4.3'] }
   end
 
   step 'Setup: change Gemfile to not have a requirement' do
@@ -26,21 +26,21 @@ end
       G
     end
 
-    expect_locked { [%w(foo 1.4.3)] }
+    expect_locked { ['foo 1.4.3'] }
   end
 
   step '`bundle update --patch` moves up to 1.4.5' do
     execute_bundler { 'bundle update --patch' }
-    expect_locked { [%w(foo 1.4.5)] }
+    expect_locked { ['foo 1.4.5'] }
   end
 
   step '`bundle update --minor` moves up to 1.5.1' do
     execute_bundler { 'bundle update --minor' }
-    expect_locked { [%w(foo 1.5.1)] }
+    expect_locked { ['foo 1.5.1'] }
   end
 
   step '`bundle update` moves up to 2.0.0' do
     execute_bundler { 'bundle update' }
-    expect_locked { [%w(foo 2.0.0)] }
+    expect_locked { ['foo 2.0.0'] }
   end
 end
