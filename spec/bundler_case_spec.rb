@@ -14,8 +14,8 @@ describe BundlerCase do
     end
     c.test
     gems_dir = File.join(c.repo_dir, 'gems')
-    expect(File.exist?(File.join(gems_dir, 'foo-1.0.0.gem'))).to be_true
-    expect(File.exist?(File.join(gems_dir, 'foo-1.0.1.gem'))).to be_true
+    expect(File.exist?(File.join(gems_dir, 'foo-1.0.0.gem'))).to be true
+    expect(File.exist?(File.join(gems_dir, 'foo-1.0.1.gem'))).to be true
   end
 
   it 'integration success' do
@@ -62,11 +62,11 @@ describe BundlerCase do
       end
     end
     result = c.test
-    expect(result).to be_true
+    expect(result).to be true
     expect(c.failures).to be_empty
 
     dest = File.join(c.out_dir, 'zz', 'ruby', '*', 'gems', 'foo-1.0.0')
-    expect(File.exist?(Dir[dest].first)).to be_true
+    expect(File.exist?(Dir[dest].first)).to be true
   end
 
   it 'integration failure' do
@@ -92,12 +92,12 @@ describe BundlerCase do
         ['foo 1.0.0', 'bar 1.1.0']
       end
     end
-    expect(c.test).to_not be_true
+    expect(c.test).to_not be true
     expect(c.failures).to_not be_empty
     expect(c.failures.first).to eql 'Expected bar 1.1.0, found bar 1.0.1'
 
     dest = File.join(c.out_dir, 'zz', 'ruby', '*', 'gems', 'foo-1.0.0')
-    expect(File.exist?(Dir[dest].first)).to be_true
+    expect(File.exist?(Dir[dest].first)).to be true
   end
 
   it 'lock option to given_gemfile' do
